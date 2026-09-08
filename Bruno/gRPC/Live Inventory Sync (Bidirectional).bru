@@ -1,0 +1,20 @@
+meta {
+  name: Live Inventory Sync (Bidirectional)
+  type: grpc
+  seq: 6
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/LiveInventorySync
+  methodType: bidi-streaming
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "productId": "11111111-1111-1111-1111-111111111111",
+    "quantityDelta": -2,
+    "reason": "Customer checkout"
+  }
+}

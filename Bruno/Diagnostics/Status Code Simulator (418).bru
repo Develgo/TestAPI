@@ -1,0 +1,16 @@
+meta {
+  name: Status Code Simulator (418)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/test/status/418
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 418
+  res.body.statusCode: eq 418
+}

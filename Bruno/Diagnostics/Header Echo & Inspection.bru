@@ -1,0 +1,23 @@
+meta {
+  name: Header Echo & Inspection
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/test/headers
+  body: none
+  auth: none
+}
+
+headers {
+  X-Client-Platform: Bruno
+  X-Test-Trace-ID: trace-998877
+}
+
+assert {
+  res.status: eq 200
+  res.headers["x-testapi-echo"]: eq Enabled
+  res.headers["x-server-time"]: isDefined
+  res.headers["etag"]: isDefined
+}

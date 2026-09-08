@@ -1,0 +1,23 @@
+meta {
+  name: Create Product (Unary)
+  type: grpc
+  seq: 3
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/CreateProduct
+  methodType: unary
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "name": "Mechanical Keyboard RGB",
+    "description": "Hot-swappable 75% mechanical keyboard.",
+    "price": 89.99,
+    "category": "ELECTRONICS",
+    "sku": "TECH-KEY-075",
+    "stockQuantity": 40
+  }
+}

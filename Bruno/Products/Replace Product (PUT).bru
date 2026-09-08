@@ -1,0 +1,33 @@
+meta {
+  name: Replace Product (PUT)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/v1/products/22222222-2222-2222-2222-222222222222
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Wireless Noise-Cancelling Headphones Pro",
+    "description": "Updated flagship over-ear headphones with 50h battery life.",
+    "price": 379.99,
+    "category": "electronics",
+    "sku": "TECH-AUD-002-PRO",
+    "stockQuantity": 75,
+    "tags": ["audio", "bluetooth", "anc", "pro"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq Wireless Noise-Cancelling Headphones Pro
+  res.body.sku: eq TECH-AUD-002-PRO
+}

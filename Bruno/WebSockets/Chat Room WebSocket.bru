@@ -1,0 +1,15 @@
+meta {
+  name: Chat Room WebSocket
+  type: ws
+  seq: 3
+}
+
+ws {
+  url: ws://localhost:8080/ws/chat
+}
+
+body:ws {
+  name: Join Message
+  content: {"action": "join", "username": "BrunoTester"}
+  type: json
+}

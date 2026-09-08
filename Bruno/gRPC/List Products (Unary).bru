@@ -1,0 +1,19 @@
+meta {
+  name: List Products (Unary)
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/ListProducts
+  methodType: unary
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "page": 1,
+    "perPage": 10
+  }
+}

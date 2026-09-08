@@ -1,0 +1,15 @@
+meta {
+  name: Echo WebSocket
+  type: ws
+  seq: 1
+}
+
+ws {
+  url: ws://localhost:8080/ws/echo
+}
+
+body:ws {
+  name: Echo Message
+  content: Hello from Bruno WebSocket client!
+  type: text
+}

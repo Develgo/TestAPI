@@ -1,0 +1,23 @@
+meta {
+  name: Batch Create Products (Client Streaming)
+  type: grpc
+  seq: 5
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/BatchCreateProducts
+  methodType: client-streaming
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "name": "Batch Item 1",
+    "description": "Batch product one",
+    "price": 19.99,
+    "category": "BOOKS",
+    "sku": "BATCH-001",
+    "stockQuantity": 10
+  }
+}

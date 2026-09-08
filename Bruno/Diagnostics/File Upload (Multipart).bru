@@ -1,0 +1,21 @@
+meta {
+  name: File Upload (Multipart)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/test/upload
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  file: @file(sample.txt)
+}
+
+assert {
+  res.status: eq 200
+  res.body.filename: eq sample.txt
+  res.body.sha256: isDefined
+}

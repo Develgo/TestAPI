@@ -1,0 +1,18 @@
+meta {
+  name: Get Product by ID (Unary)
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/GetProduct
+  methodType: unary
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "id": "11111111-1111-1111-1111-111111111111"
+  }
+}

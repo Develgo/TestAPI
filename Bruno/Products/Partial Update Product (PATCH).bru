@@ -1,0 +1,28 @@
+meta {
+  name: Partial Update Product (PATCH)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/products/33333333-3333-3333-3333-333333333333
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "price": 149.99,
+    "stockQuantity": 50
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.price: eq 149.99
+  res.body.stockQuantity: eq 50
+}

@@ -1,0 +1,25 @@
+meta {
+  name: List Products
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/products?category=electronics&page=1&per=10&sort=price&order=desc
+  body: none
+  auth: none
+}
+
+params:query {
+  category: electronics
+  page: 1
+  per: 10
+  sort: price
+  order: desc
+}
+
+assert {
+  res.status: eq 200
+  res.body.metadata.page: eq 1
+  res.body.items: isDefined
+}

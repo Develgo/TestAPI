@@ -1,0 +1,18 @@
+meta {
+  name: Stream Product Events (Server Streaming)
+  type: grpc
+  seq: 4
+}
+
+grpc {
+  url: {{grpcUrl}}
+  method: /products.ProductsService/StreamProductEvents
+  methodType: server-streaming
+  protoFilePath: ../../Protos/products.proto
+}
+
+body:json {
+  {
+    "filterCategory": ""
+  }
+}

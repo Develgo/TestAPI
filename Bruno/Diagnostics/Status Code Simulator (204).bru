@@ -1,0 +1,15 @@
+meta {
+  name: Status Code Simulator (204)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/test/status/204
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}

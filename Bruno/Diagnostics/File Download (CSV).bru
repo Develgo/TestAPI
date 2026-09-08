@@ -1,0 +1,17 @@
+meta {
+  name: File Download (CSV)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/v1/test/download
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: contains text/csv
+  res.headers["content-disposition"]: contains sample-products.csv
+}

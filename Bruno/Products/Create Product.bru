@@ -1,0 +1,39 @@
+meta {
+  name: Create Product
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/products
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Smart Ambient Light Strip",
+    "description": "RGBWW light strip with Wi-Fi control and dynamic color scenes.",
+    "price": 34.99,
+    "category": "home",
+    "sku": "HOME-LGT-010",
+    "stockQuantity": 85,
+    "tags": ["smart-home", "lighting", "led"]
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("createdProductId", res.body.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.headers["location"]: isDefined
+  res.body.name: eq Smart Ambient Light Strip
+}

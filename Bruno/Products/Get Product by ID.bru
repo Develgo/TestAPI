@@ -1,0 +1,17 @@
+meta {
+  name: Get Product by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/products/11111111-1111-1111-1111-111111111111
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq 11111111-1111-1111-1111-111111111111
+  res.body.name: eq Ultra-Light Laptop Pro 16
+}
