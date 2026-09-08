@@ -2,9 +2,18 @@ import Vapor
 
 /// configures your application
 func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    // Initialize shared in-memory ProductRepository
+    let repository = ProductRepository()
+    app.productRepository = repository
 
-    // register routes
+    // Initialize shared ChatRoom for WebSockets
+    app.chatRoom = ChatRoom()
+
+    // Register gRPC lifecycle handler (runs concurrently on port 50051 or GRPC_PORT)
+    let grpcPort = Environment.get("GRPC_PORT").flatMap(Int.init) ?? 50051
+    let grpcHost = Environment.get("GRPC_HOST") ?? "0.0.0.0"
+    app.lifecycle.use(GRPCServerLifecycle(host: grpcHost, port: grpcPort, repository: repository))
+
+    // Register routes
     try routes(app)
 }

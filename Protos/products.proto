@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package products;
+
+// Represents a product category
+enum ProductCategory {
+  CATEGORY_UNSPECIFIED = 0;
+  ELECTRONICS = 1;
+  CLOTHING = 2;
+  BOOKS = 3;
+  HOME = 4;
+  FOOD = 5;
+}
+
+// Represents a single product entity
+message ProductMessage {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  ProductCategory category = 5;
+  string sku = 6;
+  int32 stock_quantity = 7;
+  repeated string tags = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+// Request to fetch a product by ID
+message GetProductRequest {
+  string id = 1;
+}
+
+// Request to list products with optional filtering and pagination
+message ListProductsRequest {
+  ProductCategory category = 1;
+  string search = 2;
+  int32 page = 3;
+  int32 per_page = 4;
+}
+
+// Response containing paginated product list
+message ListProductsResponse {
+  repeated ProductMessage products = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 per_page = 4;
+  int32 total_pages = 5;
+}
+
+// Request to create a new product
+message CreateProductRequest {
+  string name = 1;
+  string description = 2;
+  double price = 3;
+  ProductCategory category = 4;
+  string sku = 5;
+  int32 stock_quantity = 6;
+  repeated string tags = 7;
+}
+
+// Request to stream product events
+message StreamEventsRequest {
+  string filter_category = 1;
+}
+
+// Real-time product event for server streaming
+message ProductEvent {
+  enum EventType {
+    EVENT_UNSPECIFIED = 0;
+    CREATED = 1;
+    UPDATED = 2;
+    DELETED = 3;
+    PRICE_CHANGED = 4;
+    STOCK_UPDATED = 5;
+  }
+  EventType event_type = 1;
+  ProductMessage product = 2;
+  string timestamp = 3;
+  string message = 4;
+}
+
+// Response for batch product creation
+message BatchCreateResponse {
+  int32 created_count = 1;
+  repeated string created_ids = 2;
+  string summary = 3;
+}
+
+// Inventory sync request for bidirectional streaming
+message InventoryUpdateRequest {
+  string product_id = 1;
+  int32 quantity_delta = 2; // e.g. -1 for sale, +10 for restock
+  string reason = 3;
+}
+
+// Inventory sync response for bidirectional streaming
+message InventoryUpdateResponse {
+  string product_id = 1;
+  int32 current_stock = 2;
+  bool success = 3;
+  string message = 4;
+  string timestamp = 5;
+}
+
+// Service definition
+service ProductsService {
+  // Unary RPC: Get a product by ID
+  rpc GetProduct (GetProductRequest) returns (ProductMessage);
+
+  // Unary RPC: List products
+  rpc ListProducts (ListProductsRequest) returns (ListProductsResponse);
+
+  // Unary RPC: Create a product
+  rpc CreateProduct (CreateProductRequest) returns (ProductMessage);
+
+  // Server Streaming RPC: Stream product events / updates
+  rpc StreamProductEvents (StreamEventsRequest) returns (stream ProductEvent);
+
+  // Client Streaming RPC: Batch create products
+  rpc BatchCreateProducts (stream CreateProductRequest) returns (BatchCreateResponse);
+
+  // Bidirectional Streaming RPC: Live inventory synchronization
+  rpc LiveInventorySync (stream InventoryUpdateRequest) returns (stream InventoryUpdateResponse);
+}
