@@ -5,6 +5,10 @@ func configure(_ app: Application) async throws {
     // Initialize shared in-memory ProductRepository
     let repository = ProductRepository()
     app.productRepository = repository
+    
+    // set port
+    let port = Int(Environment.get("PORT") ?? "8080") ?? 8080
+    app.http.server.configuration.port = port
 
     // Initialize shared ChatRoom for WebSockets
     app.chatRoom = ChatRoom()

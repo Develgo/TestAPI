@@ -9,6 +9,7 @@ func routes(_ app: Application) throws {
             "status": "online",
             "rest_products": "/api/v1/products",
             "rest_diagnostics": "/api/v1/test",
+            "rest_inspect": "/api/v1/test/inspect",
             "rest_auth": "/api/v1/auth",
             "ws_echo": "/ws/echo",
             "ws_ticker": "/ws/ticker",

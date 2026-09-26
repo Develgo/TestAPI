@@ -88,6 +88,7 @@ curl -i -X DELETE http://localhost:8080/api/v1/products/11111111-1111-1111-1111-
 | `GET` | `/api/v1/test/status/:code` | Returns requested HTTP status code (200, 201, 204, 400, 401, 404, 418, 500, etc.) |
 | `GET` | `/api/v1/test/delay?seconds=N` | Simulates server latency (up to 10s) |
 | `GET/POST` | `/api/v1/test/headers` | Echoes incoming client headers & injects `X-Server-Time`, `ETag` |
+| `ANY` | `/api/v1/test/inspect` | Inspects full request details including headers, body (raw & parsed JSON), query, and IP |
 | `POST` | `/api/v1/test/upload` | Multipart form-data file upload test; returns size & SHA256 |
 | `GET` | `/api/v1/test/download` | Downloads sample CSV file with `Content-Disposition` |
 
@@ -102,6 +103,12 @@ curl -s "http://localhost:8080/api/v1/test/delay?seconds=2" | jq .
 
 # Inspect headers & response headers
 curl -i http://localhost:8080/api/v1/test/headers -H "X-Client-Version: 2.0.0"
+
+# Inspect full request details (headers, body, query parameters)
+curl -i -X POST "http://localhost:8080/api/v1/test/inspect?debug=true" \
+  -H "Content-Type: application/json" \
+  -H "X-Client-Platform: CLI" \
+  -d '{"message": "Hello TestAPI", "active": true, "count": 42}'
 
 # Download test file
 curl -OJ http://localhost:8080/api/v1/test/download

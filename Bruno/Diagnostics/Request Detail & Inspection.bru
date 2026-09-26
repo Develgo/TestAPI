@@ -1,0 +1,55 @@
+meta {
+  name: Request Detail & Inspection
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/test/inspect?source=bruno&debug=true
+  body: json
+  auth: none
+}
+
+params:query {
+  source: bruno
+  debug: true
+}
+
+headers {
+  Content-Type: application/json
+  X-Client-Platform: Bruno
+  X-Test-Trace-ID: trace-inspect-998877
+  Custom-Header: InspectionVerification
+}
+
+body:json {
+  {
+    "message": "Hello from Bruno request inspection test",
+    "active": true,
+    "count": 42,
+    "tags": [
+      "diagnostics",
+      "testing"
+    ],
+    "client": {
+      "app": "Bruno",
+      "version": "1.0.0"
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.method: eq POST
+  res.body.path: eq /api/v1/test/inspect
+  res.body.queryParams.source: eq bruno
+  res.body.queryParams.debug: eq true
+  res.body.headers["x-client-platform"]: eq Bruno
+  res.body.headers["custom-header"]: eq InspectionVerification
+  res.body.body.sizeInBytes: gt 0
+  res.body.body.contentType: contains application/json
+  res.body.body.json.message: eq Hello from Bruno request inspection test
+  res.body.body.json.active: eq true
+  res.body.body.json.count: eq 42
+  res.body.body.json.client.app: eq Bruno
+}

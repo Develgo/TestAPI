@@ -1,5 +1,6 @@
 import Vapor
 import Crypto
+import Foundation
 
 struct DiagnosticController: RouteCollection, Sendable {
     init() {}
@@ -12,6 +13,20 @@ struct DiagnosticController: RouteCollection, Sendable {
         test.post("headers", use: testHeaders)
         test.post("upload", use: testUpload)
         test.get("download", use: testDownload)
+
+        // Request inspection routes (headers, body, method, query, etc.)
+        test.on(.GET, "inspect", use: testInspectRequest)
+        test.on(.POST, "inspect", use: testInspectRequest)
+        test.on(.PUT, "inspect", use: testInspectRequest)
+        test.on(.PATCH, "inspect", use: testInspectRequest)
+        test.on(.DELETE, "inspect", use: testInspectRequest)
+
+        // Alias under "request"
+        test.on(.GET, "request", use: testInspectRequest)
+        test.on(.POST, "request", use: testInspectRequest)
+        test.on(.PUT, "request", use: testInspectRequest)
+        test.on(.PATCH, "request", use: testInspectRequest)
+        test.on(.DELETE, "request", use: testInspectRequest)
     }
 
     // GET /api/v1/test/status/:code
@@ -142,6 +157,104 @@ struct DiagnosticController: RouteCollection, Sendable {
         res.body = .init(string: csvContent)
         res.headers.replaceOrAdd(name: .contentType, value: "text/csv; charset=utf-8")
         res.headers.replaceOrAdd(name: .contentDisposition, value: "attachment; filename=\"sample-products.csv\"")
+        return res
+    }
+
+    // ANY /api/v1/test/inspect & /api/v1/test/request
+    @Sendable
+    func testInspectRequest(req: Request) async throws -> Response {
+        var headerDict: [String: String] = [:]
+        for (name, value) in req.headers {
+            if let existing = headerDict[name] {
+                headerDict[name] = "\(existing), \(value)"
+            } else {
+                headerDict[name] = value
+            }
+            let lower = name.lowercased()
+            if headerDict[lower] == nil {
+                headerDict[lower] = value
+            }
+        }
+
+        var queryParams: [String: String] = [:]
+        if let query = req.url.query {
+            let pairs = query.split(separator: "&")
+            for pair in pairs {
+                let parts = pair.split(separator: "=", maxSplits: 1)
+                if parts.count == 2 {
+                    let key = String(parts[0]).removingPercentEncoding ?? String(parts[0])
+                    let value = String(parts[1]).removingPercentEncoding ?? String(parts[1])
+                    queryParams[key] = value
+                } else if parts.count == 1 {
+                    let key = String(parts[0]).removingPercentEncoding ?? String(parts[0])
+                    queryParams[key] = ""
+                }
+            }
+        }
+
+        var rawBody: String? = nil
+        var jsonBody: JSONValue? = nil
+        var formBody: [String: String]? = nil
+        let sizeInBytes: Int
+
+        if let bodyBuffer = req.body.data {
+            sizeInBytes = bodyBuffer.readableBytes
+            if sizeInBytes > 0 {
+                if let str = bodyBuffer.getString(at: bodyBuffer.readerIndex, length: sizeInBytes) {
+                    rawBody = str
+                }
+                let data = Data(bodyBuffer.readableBytesView)
+                if let parsed = try? JSONDecoder().decode(JSONValue.self, from: data) {
+                    jsonBody = parsed
+                }
+                if let contentType = req.headers.contentType, contentType == .urlEncodedForm, let rawStr = rawBody {
+                    var parsedForm: [String: String] = [:]
+                    let pairs = rawStr.split(separator: "&")
+                    for pair in pairs {
+                        let parts = pair.split(separator: "=", maxSplits: 1)
+                        if parts.count == 2 {
+                            let key = String(parts[0]).replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? String(parts[0])
+                            let value = String(parts[1]).replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? String(parts[1])
+                            parsedForm[key] = value
+                        } else if parts.count == 1 {
+                            let key = String(parts[0]).replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? String(parts[0])
+                            parsedForm[key] = ""
+                        }
+                    }
+                    if !parsedForm.isEmpty {
+                        formBody = parsedForm
+                    }
+                }
+            }
+        } else {
+            sizeInBytes = 0
+        }
+
+        let bodyDetail = RequestBodyDetail(
+            raw: rawBody,
+            json: jsonBody,
+            form: formBody,
+            sizeInBytes: sizeInBytes,
+            contentType: req.headers.contentType?.description
+        )
+
+        let detail = RequestDetailResponse(
+            method: req.method.rawValue,
+            uri: req.url.string,
+            url: req.url.string,
+            path: req.url.path,
+            query: req.url.query,
+            queryParams: queryParams,
+            headers: headerDict,
+            body: bodyDetail,
+            remoteAddress: req.remoteAddress?.description,
+            serverTime: Date()
+        )
+
+        let res = Response(status: .ok)
+        try res.content.encode(detail)
+        res.headers.replaceOrAdd(name: "X-TestAPI-Echo", value: "Enabled")
+        res.headers.replaceOrAdd(name: "X-Server-Time", value: ISO8601DateFormatter().string(from: Date()))
         return res
     }
 }

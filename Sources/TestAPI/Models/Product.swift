@@ -175,6 +175,194 @@ struct HeaderEchoResponse: Content, Sendable {
     let serverTime: Date
 }
 
+// MARK: - Dynamic JSON Value & Request Inspection Models
+
+struct DynamicCodingKeys: CodingKey, Sendable {
+    var stringValue: String
+    var intValue: Int?
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+
+    init?(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
+    }
+}
+
+enum JSONValue: Codable, Sendable, Equatable {
+    case string(String)
+    case number(Double)
+    case int(Int)
+    case bool(Bool)
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case null
+
+    init(from decoder: any Decoder) throws {
+        if let keyedContainer = try? decoder.container(keyedBy: DynamicCodingKeys.self) {
+            var dict: [String: JSONValue] = [:]
+            for key in keyedContainer.allKeys {
+                dict[key.stringValue] = try keyedContainer.decode(JSONValue.self, forKey: key)
+            }
+            self = .object(dict)
+            return
+        }
+
+        if var unkeyedContainer = try? decoder.unkeyedContainer() {
+            var array: [JSONValue] = []
+            while !unkeyedContainer.isAtEnd {
+                array.append(try unkeyedContainer.decode(JSONValue.self))
+            }
+            self = .array(array)
+            return
+        }
+
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .null
+        } else if let bool = try? container.decode(Bool.self) {
+            self = .bool(bool)
+        } else if let int = try? container.decode(Int.self) {
+            self = .int(int)
+        } else if let double = try? container.decode(Double.self) {
+            self = .number(double)
+        } else if let string = try? container.decode(String.self) {
+            self = .string(string)
+        } else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unsupported JSON value")
+            )
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        switch self {
+        case .string(let str):
+            var container = encoder.singleValueContainer()
+            try container.encode(str)
+        case .number(let num):
+            var container = encoder.singleValueContainer()
+            try container.encode(num)
+        case .int(let int):
+            var container = encoder.singleValueContainer()
+            try container.encode(int)
+        case .bool(let bool):
+            var container = encoder.singleValueContainer()
+            try container.encode(bool)
+        case .object(let obj):
+            var container = encoder.container(keyedBy: DynamicCodingKeys.self)
+            for (key, val) in obj {
+                try container.encode(val, forKey: DynamicCodingKeys(stringValue: key))
+            }
+        case .array(let arr):
+            var container = encoder.unkeyedContainer()
+            for val in arr {
+                try container.encode(val)
+            }
+        case .null:
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+        }
+    }
+
+    subscript(key: String) -> JSONValue? {
+        if case .object(let dict) = self {
+            return dict[key]
+        }
+        return nil
+    }
+
+    subscript(index: Int) -> JSONValue? {
+        if case .array(let arr) = self, index >= 0 && index < arr.count {
+            return arr[index]
+        }
+        return nil
+    }
+
+    var stringValue: String? {
+        if case .string(let str) = self { return str }
+        return nil
+    }
+
+    var intValue: Int? {
+        if case .int(let i) = self { return i }
+        return nil
+    }
+
+    var doubleValue: Double? {
+        if case .number(let d) = self { return d }
+        if case .int(let i) = self { return Double(i) }
+        return nil
+    }
+
+    var boolValue: Bool? {
+        if case .bool(let b) = self { return b }
+        return nil
+    }
+}
+
+struct RequestBodyDetail: Content, Sendable {
+    let raw: String?
+    let json: JSONValue?
+    let form: [String: String]?
+    let sizeInBytes: Int
+    let contentType: String?
+
+    init(
+        raw: String? = nil,
+        json: JSONValue? = nil,
+        form: [String: String]? = nil,
+        sizeInBytes: Int = 0,
+        contentType: String? = nil
+    ) {
+        self.raw = raw
+        self.json = json
+        self.form = form
+        self.sizeInBytes = sizeInBytes
+        self.contentType = contentType
+    }
+}
+
+struct RequestDetailResponse: Content, Sendable {
+    let method: String
+    let uri: String
+    let url: String
+    let path: String
+    let query: String?
+    let queryParams: [String: String]
+    let headers: [String: String]
+    let body: RequestBodyDetail
+    let remoteAddress: String?
+    let serverTime: Date
+
+    init(
+        method: String,
+        uri: String,
+        url: String,
+        path: String,
+        query: String?,
+        queryParams: [String: String],
+        headers: [String: String],
+        body: RequestBodyDetail,
+        remoteAddress: String?,
+        serverTime: Date = Date()
+    ) {
+        self.method = method
+        self.uri = uri
+        self.url = url
+        self.path = path
+        self.query = query
+        self.queryParams = queryParams
+        self.headers = headers
+        self.body = body
+        self.remoteAddress = remoteAddress
+        self.serverTime = serverTime
+    }
+}
+
 struct AuthTokenResponse: Content, Sendable {
     let token: String
     let tokenType: String

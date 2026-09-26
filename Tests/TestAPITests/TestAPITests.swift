@@ -265,4 +265,81 @@ struct TestAPITests {
         #expect(success == true)
         #expect(newStock == 30)
     }
+
+    @Test("Test Diagnostic Endpoints - Request Inspection with Headers and Body")
+    func diagnosticRequestInspectWithBodyAndHeaders() async throws {
+        try await withApp(configure: configure) { app in
+            let testPayload = """
+            {
+                "greeting": "Hello Vapor",
+                "count": 100,
+                "enabled": true,
+                "metadata": {
+                    "env": "testing",
+                    "version": 2
+                }
+            }
+            """
+
+            try await app.testing().test(.POST, "api/v1/test/inspect?tag=vapor-test&debug=1", beforeRequest: { req async in
+                req.headers.contentType = .json
+                req.headers.add(name: "X-Test-Trace-ID", value: "trace-inspection-99")
+                req.headers.add(name: "X-Custom-Client", value: "SwiftTesting")
+                req.body = .init(string: testPayload)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                #expect(res.headers.contains(name: "X-TestAPI-Echo"))
+                #expect(res.headers.contains(name: "X-Server-Time"))
+
+                let detail = try res.content.decode(RequestDetailResponse.self)
+                #expect(detail.method == "POST")
+                #expect(detail.path == "/api/v1/test/inspect")
+                #expect(detail.queryParams["tag"] == "vapor-test")
+                #expect(detail.queryParams["debug"] == "1")
+                #expect(detail.headers["x-test-trace-id"] == "trace-inspection-99")
+                #expect(detail.headers["x-custom-client"] == "SwiftTesting")
+                #expect(detail.body.contentType?.contains("application/json") == true)
+                #expect(detail.body.sizeInBytes > 0)
+                #expect(detail.body.raw?.contains("Hello Vapor") == true)
+                #expect(detail.body.json != nil)
+                #expect(detail.body.json?["greeting"]?.stringValue == "Hello Vapor")
+                #expect(detail.body.json?["count"]?.intValue == 100)
+                #expect(detail.body.json?["enabled"]?.boolValue == true)
+                #expect(detail.body.json?["metadata"]?["env"]?.stringValue == "testing")
+                #expect(detail.body.json?["metadata"]?["version"]?.intValue == 2)
+            })
+        }
+    }
+
+    @Test("Test Diagnostic Endpoints - Request Inspection GET & Alias Route")
+    func diagnosticRequestInspectGetAndAlias() async throws {
+        try await withApp(configure: configure) { app in
+            // Test GET on /api/v1/test/inspect (empty body)
+            try await app.testing().test(.GET, "api/v1/test/inspect", beforeRequest: { req async in
+                req.headers.add(name: "X-Client-Type", value: "Browser")
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let detail = try res.content.decode(RequestDetailResponse.self)
+                #expect(detail.method == "GET")
+                #expect(detail.body.sizeInBytes == 0)
+                #expect(detail.body.json == nil)
+                #expect(detail.body.raw == nil)
+                #expect(detail.headers["x-client-type"] == "Browser")
+            })
+
+            // Test alias route /api/v1/test/request
+            try await app.testing().test(.POST, "api/v1/test/request", beforeRequest: { req async in
+                req.headers.contentType = .plainText
+                req.body = .init(string: "raw text payload")
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let detail = try res.content.decode(RequestDetailResponse.self)
+                #expect(detail.method == "POST")
+                #expect(detail.path == "/api/v1/test/request")
+                #expect(detail.body.raw == "raw text payload")
+                #expect(detail.body.json == nil)
+                #expect(detail.body.sizeInBytes == 16)
+            })
+        }
+    }
 }
